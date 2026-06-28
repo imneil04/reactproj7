@@ -7,6 +7,7 @@ const navigation = [
   { href: "/categories", label: "Categories" },
   { href: "/suppliers", label: "Suppliers" },
   { href: "/stock-movements", label: "Stock movements" },
+  { href: "/audit-log", label: "Audit log" },
 ];
 
 export function Sidebar() {

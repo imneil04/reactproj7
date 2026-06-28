@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordAuditLog } from "@/lib/audit-logs";
 import { createClient } from "@/lib/supabase/server";
 
 interface ProductInput {
@@ -125,6 +126,7 @@ async function recordStockMovement({
 
 function revalidateInventoryRoutes() {
   revalidatePath("/");
+  revalidatePath("/audit-log");
   revalidatePath("/categories");
   revalidatePath("/products");
   revalidatePath("/suppliers");
@@ -170,6 +172,14 @@ export async function createProductAction(input: ProductInput): Promise<ActionRe
         note: "Initial product quantity",
       });
     }
+
+    await recordAuditLog({
+      action: "create",
+      entityType: "product",
+      entityId: data.id as string,
+      entityName: product.name,
+      details: { sku: product.sku, quantity: product.quantity },
+    });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to create product." };
   }
@@ -194,7 +204,7 @@ export async function updateProductAction(
   try {
     const { data: existingProduct, error: existingProductError } = await supabase
       .from("products")
-      .select("quantity")
+      .select("name, sku, quantity, reorder_level, unit_price")
       .eq("id", id)
       .single();
 
@@ -232,6 +242,23 @@ export async function updateProductAction(
         note: "Product quantity updated",
       });
     }
+
+    await recordAuditLog({
+      action: "update",
+      entityType: "product",
+      entityId: id,
+      entityName: product.name,
+      details: {
+        previous: existingProduct,
+        current: {
+          name: product.name,
+          sku: product.sku,
+          quantity: product.quantity,
+          reorder_level: product.reorderLevel,
+          unit_price: product.unitPrice,
+        },
+      },
+    });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to update product." };
   }
@@ -242,11 +269,32 @@ export async function updateProductAction(
 
 export async function deleteProductAction(id: string): Promise<ActionResult> {
   const supabase = await createClient();
+  const { data: existingProduct, error: existingProductError } = await supabase
+    .from("products")
+    .select("name, sku, quantity")
+    .eq("id", id)
+    .single();
+
+  if (existingProductError) {
+    return { error: existingProductError.message };
+  }
+
   const { error } = await supabase.from("products").delete().eq("id", id);
 
   if (error) {
     return { error: error.message };
   }
+
+  await recordAuditLog({
+    action: "delete",
+    entityType: "product",
+    entityId: id,
+    entityName: existingProduct.name,
+    details: {
+      sku: existingProduct.sku,
+      quantity: existingProduct.quantity,
+    },
+  });
 
   revalidateInventoryRoutes();
   return {};

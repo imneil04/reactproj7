@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useMemo, useState, useTransition } from "react";
+import { type ChangeEvent, type FormEvent, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createProductAction,
@@ -28,6 +28,8 @@ const emptyProduct: ProductFormState = {
   unitPrice: 0,
 };
 
+const csvHeaders = ["name", "sku", "category", "supplier", "quantity", "reorderLevel", "unitPrice"];
+
 interface ProductTableProps {
   initialProducts: Product[];
   loadError: string | null;
@@ -42,6 +44,8 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
   const [formValues, setFormValues] = useState<ProductFormState>(emptyProduct);
   const [formError, setFormError] = useState("");
   const [tableActionError, setTableActionError] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const headings = ["Product", "SKU", "Category", "Supplier", "Quantity", "Unit price", "Status", "Actions"];
   const visibleTableError = tableActionError || loadError;
@@ -139,6 +143,78 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
     });
   }
 
+  function handleExportProducts() {
+    const rows = initialProducts.map((product) => [
+      product.name,
+      product.sku,
+      product.category,
+      product.supplier,
+      product.quantity,
+      product.reorderLevel,
+      product.unitPrice,
+    ]);
+    const csvContent = [csvHeaders, ...rows]
+      .map((row) => row.map((value) => escapeCsvValue(String(value))).join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `products-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCsvImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setTableActionError("");
+    setImportMessage("");
+
+    try {
+      const text = await file.text();
+      const productsToImport = parseProductCsv(text);
+      const existingSkus = new Set(initialProducts.map((product) => product.sku.toUpperCase()));
+      const importSkus = new Set<string>();
+
+      for (const product of productsToImport) {
+        const sku = product.sku.toUpperCase();
+
+        if (existingSkus.has(sku) || importSkus.has(sku)) {
+          setTableActionError(`Import stopped. Duplicate SKU found: ${sku}`);
+          return;
+        }
+
+        importSkus.add(sku);
+      }
+
+      startTransition(async () => {
+        let importedCount = 0;
+
+        for (const product of productsToImport) {
+          const result = await createProductAction(product);
+
+          if (result.error) {
+            setTableActionError(`Import stopped at ${product.sku}: ${result.error}`);
+            return;
+          }
+
+          importedCount += 1;
+        }
+
+        setImportMessage(`Imported ${importedCount} ${importedCount === 1 ? "product" : "products"}.`);
+        router.refresh();
+      });
+    } catch (error) {
+      setTableActionError(error instanceof Error ? error.message : "Unable to import CSV.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+  /**render (what to display) in the web UI */
   return (
     <section className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -154,18 +230,41 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             />
           </div>
-          <button type="button" onClick={openAddForm} className="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-            Add product
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={handleExportProducts} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              Export CSV
+            </button>
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isPending} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
+              Import CSV
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={handleCsvImport}
+              className="hidden"
+            />
+            <button type="button" onClick={openAddForm} className="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+              Add product
+            </button>
+          </div>
         </div>
         <p className="mt-3 text-sm text-slate-500" aria-live="polite">
           {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}
+        </p>
+        <p className="mt-2 text-xs text-slate-400">
+          CSV columns: name, sku, category, supplier, quantity, reorderLevel, unitPrice
         </p>
       </div>
 
       {visibleTableError && (
         <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {visibleTableError}
+        </p>
+      )}
+      {importMessage && (
+        <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {importMessage}
         </p>
       )}
 
@@ -256,4 +355,94 @@ function ProductInput({ label, value, onChange, type = "text", ...inputProps }: 
       />
     </div>
   );
+}
+
+function escapeCsvValue(value: string) {
+  if (!/[",\n]/.test(value)) return value;
+  return `"${value.replaceAll("\"", "\"\"")}"`;
+}
+
+function parseProductCsv(csv: string): ProductFormState[] {
+  const rows = parseCsvRows(csv).filter((row) => row.some((value) => value.trim()));
+
+  if (rows.length < 2) {
+    throw new Error("CSV must include a header row and at least one product row.");
+  }
+
+  const headers = rows[0].map((header) => header.trim());
+  const missingHeaders = csvHeaders.filter((header) => !headers.includes(header));
+
+  if (missingHeaders.length > 0) {
+    throw new Error(`CSV is missing required columns: ${missingHeaders.join(", ")}`);
+  }
+
+  return rows.slice(1).map((row, index) => {
+    const record = Object.fromEntries(headers.map((header, headerIndex) => [header, row[headerIndex] ?? ""]));
+    const quantity = Number(record.quantity);
+    const reorderLevel = Number(record.reorderLevel);
+    const unitPrice = Number(record.unitPrice);
+
+    if (!record.name?.trim() || !record.sku?.trim() || !record.category?.trim() || !record.supplier?.trim()) {
+      throw new Error(`Row ${index + 2} is missing name, sku, category, or supplier.`);
+    }
+
+    if (
+      !Number.isFinite(quantity) ||
+      !Number.isFinite(reorderLevel) ||
+      !Number.isFinite(unitPrice) ||
+      quantity < 0 ||
+      reorderLevel < 0 ||
+      unitPrice < 0
+    ) {
+      throw new Error(`Row ${index + 2} has invalid quantity, reorderLevel, or unitPrice.`);
+    }
+
+    return {
+      name: record.name.trim(),
+      sku: record.sku.trim().toUpperCase(),
+      category: record.category.trim(),
+      supplier: record.supplier.trim(),
+      quantity,
+      reorderLevel,
+      unitPrice,
+    };
+  });
+}
+
+function parseCsvRows(csv: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < csv.length; index += 1) {
+    const char = csv[index];
+    const nextChar = csv[index + 1];
+
+    if (char === "\"" && inQuotes && nextChar === "\"") {
+      field += "\"";
+      index += 1;
+    } else if (char === "\"") {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      row.push(field);
+      field = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        index += 1;
+      }
+
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+
+  row.push(field);
+  rows.push(row);
+
+  return rows;
 }
