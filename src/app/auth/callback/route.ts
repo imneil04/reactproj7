@@ -17,3 +17,4 @@ export async function GET(request: NextRequest) {
     new URL("/login?error=Unable+to+confirm+your+account.", request.url),
   );
 }
+

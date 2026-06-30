@@ -12,6 +12,7 @@ interface ProductInput {
   quantity: number;
   reorderLevel: number;
   unitPrice: number;
+  note: string;
 }
 
 interface ActionResult {
@@ -27,12 +28,17 @@ function normalizeProductInput(input: ProductInput): NormalizedProductInput {
   const sku = input.sku.trim().toUpperCase();
   const category = input.category.trim();
   const supplier = input.supplier.trim();
+  const note = input.note.trim();
   const quantity = Number(input.quantity);
   const reorderLevel = Number(input.reorderLevel);
   const unitPrice = Number(input.unitPrice);
 
   if (!name || !sku || !category || !supplier) {
     return { error: "Product name, SKU, category, and supplier are required." };
+  }
+
+  if (!note) {
+    return { error: "Please add a note before saving this product." };
   }
 
   if (
@@ -55,6 +61,7 @@ function normalizeProductInput(input: ProductInput): NormalizedProductInput {
       quantity,
       reorderLevel,
       unitPrice,
+      note,
     },
   };
 }
@@ -169,7 +176,7 @@ export async function createProductAction(input: ProductInput): Promise<ActionRe
         productId: data.id as string,
         type: "stock_in",
         quantity: product.quantity,
-        note: "Initial product quantity",
+        note: product.note,
       });
     }
 
@@ -178,7 +185,7 @@ export async function createProductAction(input: ProductInput): Promise<ActionRe
       entityType: "product",
       entityId: data.id as string,
       entityName: product.name,
-      details: { sku: product.sku, quantity: product.quantity },
+      details: { sku: product.sku, quantity: product.quantity, note: product.note },
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to create product." };
@@ -239,7 +246,7 @@ export async function updateProductAction(
         productId: id,
         type: quantityDifference > 0 ? "stock_in" : "stock_out",
         quantity: Math.abs(quantityDifference),
-        note: "Product quantity updated",
+        note: product.note,
       });
     }
 
@@ -257,6 +264,7 @@ export async function updateProductAction(
           reorder_level: product.reorderLevel,
           unit_price: product.unitPrice,
         },
+        note: product.note,
       },
     });
   } catch (error) {

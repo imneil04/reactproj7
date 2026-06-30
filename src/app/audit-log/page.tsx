@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getAuditLogs, type AuditAction } from "@/lib/audit-logs";
+import { isCurrentUserAdmin } from "@/lib/profiles";
 
 const actionStyles = {
   create: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -26,6 +27,18 @@ function formatDateTime(value: string) {
 }
 
 export default async function AuditLogPage() {
+  const isAdmin = await isCurrentUserAdmin();
+
+  if (!isAdmin) {
+    return (
+      <DashboardShell title="Audit log" description="Track product changes by user and action.">
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
+          You need an admin role to view the audit log.
+        </p>
+      </DashboardShell>
+    );
+  }
+
   const { logs, error } = await getAuditLogs();
 
   return (

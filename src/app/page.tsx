@@ -1,6 +1,7 @@
 import { RecentMovements } from "@/components/dashboard/recent-movements";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { InventoryValueChart } from "@/components/dashboard/inventory-value-chart";
 import { ProductSnapshot } from "@/components/dashboard/product-snapshot";
 import { formatCurrency } from "@/lib/formatters";
 import { getProducts } from "@/lib/products";
@@ -40,6 +41,7 @@ export default async function Home() {
         <StatCard label="Low stock items" value={inventorySummary.lowStock} tone="warning" />
         <StatCard label="Inventory value" value={inventorySummary.inventoryValue} />
       </section>
+      <InventoryValueChart products={products} />
       <RecentMovements movements={movements} />
       <ProductSnapshot products={products} />
     </DashboardShell>

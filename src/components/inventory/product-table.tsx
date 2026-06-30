@@ -16,7 +16,9 @@ const statusStyles: Record<StockStatus, string> = {
   "Out of stock": "bg-rose-50 text-rose-700",
 };
 
-type ProductFormState = Omit<Product, "id" | "status">;
+type ProductFormState = Omit<Product, "id" | "status"> & {
+  note: string;
+};
 
 const emptyProduct: ProductFormState = {
   name: "",
@@ -26,9 +28,10 @@ const emptyProduct: ProductFormState = {
   quantity: 0,
   reorderLevel: 0,
   unitPrice: 0,
+  note: "",
 };
 
-const csvHeaders = ["name", "sku", "category", "supplier", "quantity", "reorderLevel", "unitPrice"];
+const csvHeaders = ["name", "sku", "category", "supplier", "quantity", "reorderLevel", "unitPrice", "note"];
 
 interface ProductTableProps {
   initialProducts: Product[];
@@ -77,6 +80,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
       quantity: product.quantity,
       reorderLevel: product.reorderLevel,
       unitPrice: product.unitPrice,
+      note: "",
     });
     setFormError("");
     setIsFormOpen(true);
@@ -110,7 +114,13 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
       sku: normalizedSku,
       category: formValues.category.trim(),
       supplier: formValues.supplier.trim(),
+      note: formValues.note.trim(),
     };
+
+    if (!productInput.note) {
+      setFormError("Please add a note before saving this product.");
+      return;
+    }
 
     startTransition(async () => {
       const result = editingId
@@ -152,6 +162,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
       product.quantity,
       product.reorderLevel,
       product.unitPrice,
+      "Exported product row",
     ]);
     const csvContent = [csvHeaders, ...rows]
       .map((row) => row.map((value) => escapeCsvValue(String(value))).join(","))
@@ -253,7 +264,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
           {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}
         </p>
         <p className="mt-2 text-xs text-slate-400">
-          CSV columns: name, sku, category, supplier, quantity, reorderLevel, unitPrice
+          CSV columns: name, sku, category, supplier, quantity, reorderLevel, unitPrice, note
         </p>
       </div>
 
@@ -288,6 +299,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
             <ProductInput label="Quantity" type="number" min="0" step="1" value={formValues.quantity} onChange={(value) => updateField("quantity", Number(value))} required />
             <ProductInput label="Reorder level" type="number" min="0" step="1" value={formValues.reorderLevel} onChange={(value) => updateField("reorderLevel", Number(value))} required />
             <ProductInput label="Unit price" type="number" min="0" step="0.01" value={formValues.unitPrice} onChange={(value) => updateField("unitPrice", Number(value))} required />
+            <ProductInput label="Note" value={formValues.note} onChange={(value) => updateField("note", value)} required />
           </div>
 
           <button type="submit" disabled={isPending} className="mt-5 rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
@@ -382,8 +394,14 @@ function parseProductCsv(csv: string): ProductFormState[] {
     const reorderLevel = Number(record.reorderLevel);
     const unitPrice = Number(record.unitPrice);
 
-    if (!record.name?.trim() || !record.sku?.trim() || !record.category?.trim() || !record.supplier?.trim()) {
-      throw new Error(`Row ${index + 2} is missing name, sku, category, or supplier.`);
+    if (
+      !record.name?.trim() ||
+      !record.sku?.trim() ||
+      !record.category?.trim() ||
+      !record.supplier?.trim() ||
+      !record.note?.trim()
+    ) {
+      throw new Error(`Row ${index + 2} is missing name, sku, category, supplier, or note.`);
     }
 
     if (
@@ -405,6 +423,7 @@ function parseProductCsv(csv: string): ProductFormState[] {
       quantity,
       reorderLevel,
       unitPrice,
+      note: record.note.trim(),
     };
   });
 }

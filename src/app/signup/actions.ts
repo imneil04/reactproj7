@@ -1,7 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ensureProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signup(formData: FormData) {
@@ -26,21 +26,18 @@ export async function signup(formData: FormData) {
     redirect("/signup?error=Password+must+be+at+least+8+characters.");
   }
 
-  const requestHeaders = await headers();
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    requestHeaders.get("origin") ??
-    "http://localhost:3000";
+  const normalizedFullName = fullName.trim();
+  const normalizedEmail = email.trim();
+  const normalizedPhone = phone.trim();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
-    email: email.trim(),
+    email: normalizedEmail,
     password,
     options: {
       data: {
-        full_name: fullName.trim(),
-        phone: phone.trim(),
+        full_name: normalizedFullName,
+        phone: normalizedPhone,
       },
-      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
@@ -48,9 +45,20 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  if (data.session) {
+  if (data.user && data.session) {
+    const { error: profileError } = await ensureProfile(data.user, {
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+    });
+
+    if (profileError) {
+      redirect(`/signup?error=${encodeURIComponent(profileError)}`);
+    }
+
     redirect("/");
   }
 
-  redirect("/login?message=Check+your+email+to+confirm+your+account.");
+  redirect("/login?message=Account+created.+Please+sign+in.");
 }
+

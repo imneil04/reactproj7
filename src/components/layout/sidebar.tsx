@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
+import { getCurrentUserFullName, isCurrentUserAdmin } from "@/lib/profiles";
 
 const navigation = [
   { href: "/", label: "Dashboard" },
@@ -7,17 +8,28 @@ const navigation = [
   { href: "/categories", label: "Categories" },
   { href: "/suppliers", label: "Suppliers" },
   { href: "/stock-movements", label: "Stock movements" },
-  { href: "/audit-log", label: "Audit log" },
 ];
 
-export function Sidebar() {
+export async function Sidebar() {
+  const isAdmin = await isCurrentUserAdmin();
+  const fullName = await getCurrentUserFullName();
+  const visibleNavigation = isAdmin
+    ? [...navigation, { href: "/audit-log", label: "Audit log" }]
+    : navigation;
+
   return (
     <aside className="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
       <div>
         <Link href="/" className="text-xl font-bold tracking-tight">Stockroom</Link>
         <p className="mt-1 text-xs text-slate-400">Inventory management</p>
+        {fullName && (
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2">
+            <p className="text-xs text-slate-400">Welcome</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-white">{fullName}</p>
+          </div>
+        )}
         <nav className="mt-6 flex gap-2 overflow-x-auto lg:flex-col">
-          {navigation.map((item) => (
+          {visibleNavigation.map((item) => (
             <Link key={item.href} href={item.href} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white">
               {item.label}
             </Link>
