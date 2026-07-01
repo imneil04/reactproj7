@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { signup } from "@/app/signup/actions";
 
 interface SignupPageProps {
   searchParams: Promise<{ error?: string }>;
@@ -19,7 +18,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
             Create your account
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Enter your details to get started.
+            Signup exists, but account creation is currently restricted.
           </p>
         </div>
 
@@ -32,22 +31,29 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           </p>
         )}
 
-        <form action={signup} className="space-y-5">
-          <SignupInput id="fullName" label="Full name" type="text" autoComplete="name" />
-          <SignupInput id="email" label="Email" type="email" autoComplete="email" />
-          <SignupInput id="phone" label="Phone number" type="tel" autoComplete="tel" />
-          <SignupInput
-            id="password"
-            label="Password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-          />
+        <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          New account registration is disabled for now. Please use an existing account.
+        </p>
+
+        <form className="space-y-5 opacity-60">
+          <fieldset disabled className="space-y-5">
+            <SignupInput id="fullName" label="Full name" type="text" autoComplete="name" />
+            <SignupInput id="email" label="Email" type="email" autoComplete="email" />
+            <SignupInput id="phone" label="Phone number" type="tel" autoComplete="tel" />
+            <SignupInput
+              id="password"
+              label="Password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+            />
+          </fieldset>
           <button
-            type="submit"
-            className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded-xl bg-slate-300 px-4 py-3 text-sm font-semibold text-slate-500"
           >
-            Create account
+            Registration disabled
           </button>
         </form>
 
@@ -89,7 +95,7 @@ function SignupInput({
         autoComplete={autoComplete}
         minLength={minLength}
         required
-        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       />
     </div>
   );
