@@ -243,10 +243,10 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={handleExportProducts} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={handleExportProducts} className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
               Export CSV
             </button>
-            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isPending} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isPending} className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
               Import CSV
             </button>
             <input
@@ -256,7 +256,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
               onChange={handleCsvImport}
               className="hidden"
             />
-            <button type="button" onClick={openAddForm} className="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+            <button type="button" onClick={openAddForm} className="cursor-pointer rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
               Add product
             </button>
           </div>
@@ -287,7 +287,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
               <h2 className="text-lg font-semibold">{editingId ? "Edit product" : "Add product"}</h2>
               <p className="text-sm text-slate-500">Stock status is calculated automatically.</p>
             </div>
-            <button type="button" onClick={closeForm} className="text-sm font-medium text-slate-500 hover:text-slate-950">Cancel</button>
+            <button type="button" onClick={closeForm} className="cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-950">Cancel</button>
           </div>
 
           {formError && <p role="alert" className="mb-4 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">{formError}</p>}
@@ -303,7 +303,7 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
             <ProductInput label="Note" value={formValues.note} onChange={(value) => updateField("note", value)} required />
           </div>
 
-          <button type="submit" disabled={isPending} className="mt-5 rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+          <button type="submit" disabled={isPending} className="mt-5 cursor-pointer rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
             {isPending ? "Saving..." : editingId ? "Save changes" : "Create product"}
           </button>
         </form>
@@ -330,8 +330,8 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
                 <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[product.status]}`}>{product.status}</span></td>
                 <td className="px-5 py-4">
                   <div className="flex gap-2">
-                    <button type="button" disabled={isPending} onClick={() => openEditForm(product)} className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">Edit</button>
-                    <button type="button" disabled={isPending} onClick={() => handleDelete(product)} className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">Delete</button>
+                    <button type="button" disabled={isPending} onClick={() => openEditForm(product)} className="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">Edit</button>
+                    <button type="button" disabled={isPending} onClick={() => handleDelete(product)} className="cursor-pointer rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">Delete</button>
                   </div>
                 </td>
               </tr>
