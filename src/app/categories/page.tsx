@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getCategories } from "@/lib/categories";
+import { getCategoryColors } from "@/lib/category-colors";
 
 export default async function CategoriesPage() {
   const { categories, error } = await getCategories();
@@ -19,9 +20,12 @@ export default async function CategoriesPage() {
           {categories.map((category) => (
             <article
               key={category.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              className={`rounded-2xl border p-5 shadow-sm ${getCategoryColors(category.name).card}`}
             >
-              <h2 className="font-semibold">{category.name}</h2>
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${getCategoryColors(category.name).dot}`} />
+                <h2 className="font-semibold">{category.name}</h2>
+              </div>
               <p className="mt-2 text-sm text-slate-500">
                 {category.productCount} {category.productCount === 1 ? "product" : "products"}
               </p>

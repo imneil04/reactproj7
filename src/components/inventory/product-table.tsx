@@ -7,6 +7,7 @@ import {
   deleteProductAction,
   updateProductAction,
 } from "@/app/products/actions";
+import { getCategoryColors } from "@/lib/category-colors";
 import { formatCurrency } from "@/lib/formatters";
 import type { Product, StockStatus } from "@/types/inventory";
 
@@ -318,7 +319,11 @@ export function ProductTable({ initialProducts, loadError }: ProductTableProps) 
               <tr key={product.id} className="hover:bg-slate-50">
                 <td className="px-5 py-4 font-medium text-slate-950">{product.name}</td>
                 <td className="px-5 py-4 text-slate-500">{product.sku}</td>
-                <td className="px-5 py-4">{product.category}</td>
+                <td className="px-5 py-4">
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getCategoryColors(product.category).badge}`}>
+                    {product.category}
+                  </span>
+                </td>
                 <td className="px-5 py-4">{product.supplier}</td>
                 <td className="px-5 py-4">{product.quantity}</td>
                 <td className="px-5 py-4">{formatCurrency(product.unitPrice)}</td>

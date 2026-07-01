@@ -1,3 +1,4 @@
+import { getCategoryColors } from "@/lib/category-colors";
 import { formatCurrency } from "@/lib/formatters";
 import type { Product } from "@/types/inventory";
 
@@ -39,14 +40,17 @@ export function InventoryValueChart({ products }: InventoryValueChartProps) {
             return (
               <div key={item.category} className="space-y-2">
                 <div className="flex items-center justify-between gap-4 text-sm">
-                  <span className="font-medium text-slate-700">{item.category}</span>
+                  <span className="flex items-center gap-2 font-medium text-slate-700">
+                    <span className={`h-2.5 w-2.5 rounded-full ${getCategoryColors(item.category).dot}`} />
+                    {item.category}
+                  </span>
                   <span className="font-semibold text-slate-950">
                     {formatCurrency(item.value)}
                   </span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-slate-950"
+                    className={`h-full rounded-full ${getCategoryColors(item.category).bar}`}
                     style={{ width: `${width}%` }}
                   />
                 </div>
